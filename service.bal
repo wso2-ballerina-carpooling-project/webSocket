@@ -13,16 +13,25 @@ map<websocket:Caller> connectedDrivers = {};
 map<common:DriverInfo> driverInfoMap = {};
 
 // Firebase client - initialized at module level
- json firebaseConfigJson = {
-        apiKey:"AIzaSyC7e4X0Rf-Ws03NBCiDMZx-evHO3-gfPZ4",
-        authDomain: "carpooling-c6aa5.firebaseapp.com",
-        databaseURL: "https://carpooling-c6aa5-default-rtdb.firebaseio.com",
-        projectId: "carpooling-c6aa5",
-        storageBucket: "carpooling-c6aa5.appspot.com",
-        messagingSenderId: "992894789225",
-        appId: "1:992894789225:web:e86684610562e8163de4f8",
-        measurementId: "G-0VY7MB9KJK"
-    };
+configurable string firebaseApiKey = ?;
+configurable string firebaseAuthDomain = ?;
+configurable string firebaseDatabaseURL = ?;
+configurable string firebaseProjectId = ?;
+configurable string firebaseStorageBucket = ?;
+configurable string firebaseMessagingSenderId = ?;
+configurable string firebaseAppId = ?;
+configurable string firebaseMeasurementId = ?;
+
+json firebaseConfigJson = {
+    apiKey: firebaseApiKey,
+    authDomain: firebaseAuthDomain,
+    databaseURL: firebaseDatabaseURL,
+    projectId: firebaseProjectId,
+    storageBucket: firebaseStorageBucket,
+    messagingSenderId: firebaseMessagingSenderId,
+    appId: firebaseAppId,
+    measurementId: firebaseMeasurementId
+};
 
 // Initialize Firebase on module load
 public function main() returns error? {
