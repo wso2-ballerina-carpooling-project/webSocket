@@ -392,7 +392,6 @@ dependencies = [
 ]
 modules = [
 	{org = "nalaka", packageName = "webSocketService", moduleName = "webSocketService"},
-	{org = "nalaka", packageName = "webSocketService", moduleName = "webSocketService.common"},
-	{org = "nalaka", packageName = "webSocketService", moduleName = "webSocketService.firebase"}
+	{org = "nalaka", packageName = "webSocketService", moduleName = "webSocketService.common"}
 ]
 

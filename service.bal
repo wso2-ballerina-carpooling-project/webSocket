@@ -530,7 +530,7 @@ function broadcastToAllDrivers(json message) returns websocket:Error? {
 
 // Firebase helper functions
 function storeDriverConnection(string driverId, json data) returns error? {
-    string path = "driver_connections/" + driverId;
+
 
 }
 
@@ -539,7 +539,6 @@ function storeLocationUpdate(string driverId, json data) returns error? {
     
     // Store in both current location and location history
     string currentPath = "driver_locations/" + driverId + "/current";
-    string historyPath = "driver_locations/" + driverId + "/history/" + time:utcNow().toString();
     firebase_realtime_database:FirebaseDatabaseClient firebaseClient = check new (firebaseConfigJson, "service-account.json");
     error? putError = firebaseClient.putData(currentPath, data);
     if (putError != null) {
@@ -586,11 +585,6 @@ function storeWaypointEvent(string driverId, json data) returns error? {
 }
 
 function storeRideEvent(string driverId, string rideId, json data)  {
-    string path = "ride_events/" + rideId + "/events/" + time:utcNow().toString();
-    // firebase_realtime_database:FirebaseDatabaseClient firebaseClient = check new (firebaseConfigJson, "service-account.json");
-    // error? putError = firebaseClient.putData(path, data);
-    // if (putError != null) {
-    //     log:printError("Failed to put data:", putError);
-    // }
+
 
 }
