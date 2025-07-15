@@ -11,3 +11,4 @@ generated/
 Config.toml
 
 /service-account.json
+/private.key
