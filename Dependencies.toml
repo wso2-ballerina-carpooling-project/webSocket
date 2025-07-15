@@ -131,6 +131,9 @@ dependencies = [
 	{org = "ballerina", name = "log"},
 	{org = "ballerina", name = "time"}
 ]
+modules = [
+	{org = "ballerina", packageName = "jwt", moduleName = "jwt"}
+]
 
 [[package]]
 org = "ballerina"
@@ -252,6 +255,9 @@ dependencies = [
 	{org = "ballerina", name = "time"},
 	{org = "ballerina", name = "url"}
 ]
+modules = [
+	{org = "ballerina", packageName = "oauth2", moduleName = "oauth2"}
+]
 
 [[package]]
 org = "ballerina"
@@ -360,35 +366,19 @@ modules = [
 ]
 
 [[package]]
-org = "lakpahana"
-name = "firebase_realtime_database"
-version = "0.7.4"
-dependencies = [
-	{org = "ballerina", name = "http"},
-	{org = "ballerina", name = "io"},
-	{org = "ballerina", name = "jwt"},
-	{org = "ballerina", name = "lang.regexp"},
-	{org = "ballerina", name = "log"},
-	{org = "ballerina", name = "oauth2"},
-	{org = "ballerina", name = "time"}
-]
-modules = [
-	{org = "lakpahana", packageName = "firebase_realtime_database", moduleName = "firebase_realtime_database"}
-]
-
-[[package]]
 org = "nalaka"
 name = "webSocketService"
 version = "0.1.0"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
+	{org = "ballerina", name = "jwt"},
 	{org = "ballerina", name = "log"},
+	{org = "ballerina", name = "oauth2"},
 	{org = "ballerina", name = "test"},
 	{org = "ballerina", name = "time"},
 	{org = "ballerina", name = "websocket"},
-	{org = "ballerinai", name = "observe"},
-	{org = "lakpahana", name = "firebase_realtime_database"}
+	{org = "ballerinai", name = "observe"}
 ]
 modules = [
 	{org = "nalaka", packageName = "webSocketService", moduleName = "webSocketService"},

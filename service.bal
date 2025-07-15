@@ -1,46 +1,168 @@
 import webSocketService.common;
-import lakpahana/firebase_realtime_database;
+
+import ballerina/http;
 import ballerina/io;
+import ballerina/jwt;
 import ballerina/log;
+import ballerina/oauth2;
 import ballerina/time;
 import ballerina/websocket;
-
 
 configurable int wsport = ?;
 configurable string host = ?;
 
+// Thread-safe maps for driver management
 map<websocket:Caller> connectedDrivers = {};
 map<common:DriverInfo> driverInfoMap = {};
 
-// Firebase client - initialized at module level
-configurable string firebaseApiKey = ?;
-configurable string firebaseAuthDomain = ?;
-configurable string firebaseDatabaseURL = ?;
+// Firebase configuration
 configurable string firebaseProjectId = ?;
-configurable string firebaseStorageBucket = ?;
-configurable string firebaseMessagingSenderId = ?;
-configurable string firebaseAppId = ?;
-configurable string firebaseMeasurementId = ?;
+configurable string firebaseDatabaseURL = ?;
 
-json firebaseConfigJson = {
-    apiKey: firebaseApiKey,
-    authDomain: firebaseAuthDomain,
-    databaseURL: firebaseDatabaseURL,
-    projectId: firebaseProjectId,
-    storageBucket: firebaseStorageBucket,
-    messagingSenderId: firebaseMessagingSenderId,
-    appId: firebaseAppId,
-    measurementId: firebaseMeasurementId
-};
+// Service account configuration for authentication
+configurable string serviceAccountPath = ?;
+configurable string privateKeyPath = ?;
+configurable string jwtScope = "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email";
 
-// Initialize Firebase on module load
+// HTTP client for Firebase REST API with timeout configuration
+http:Client firebaseClient = check new (firebaseDatabaseURL, {
+    timeout: 30,
+    retryConfig: {
+        count: 3,
+        interval: 2
+    }
+});
+
+// Firebase authentication client
+Client authClient = check new ({
+    serviceAccount: check getServiceAccount(serviceAccountPath),
+    jwtConfig: {
+        scope: jwtScope,
+        expTime: 3600
+    },
+    privateKeyPath: privateKeyPath
+});
+
+// Service account type
+type ServiceAccount record {|
+    string 'type;
+    string project_id;
+    string private_key_id;
+    string private_key;
+    string client_email;
+    string client_id;
+    string auth_uri;
+    string token_uri;
+    string auth_provider_x509_cert_url;
+    string client_x509_cert_url;
+    string universe_domain;
+|};
+
+// JWT configuration type
+type JWTConfig record {|
+    string scope;
+    decimal expTime;
+|};
+
+// Enhanced Auth client with better error handling
+public client class Client {
+    private ServiceAccount? serviceAccount;
+    private string? jwt = ();
+    private JWTConfig? jwtConfig = ();
+    private final string PRIVATE_KEY_PATH;
+
+    public isolated function init(record {ServiceAccount serviceAccount; JWTConfig jwtConfig; string privateKeyPath;} authConfig) returns error? {
+        self.serviceAccount = authConfig.serviceAccount;
+        self.jwtConfig = authConfig.jwtConfig;
+        self.PRIVATE_KEY_PATH = authConfig.privateKeyPath;
+        return;
+    }
+
+    isolated function generateJWT(ServiceAccount serviceAccount) returns string|error {
+        lock {
+            JWTConfig? jwtConfig = self.jwtConfig;
+            if jwtConfig is () {
+                return error("JWT Config is not provided");
+            }
+
+            int timeNow = time:utcNow()[0];
+            int expTime = timeNow + <int>jwtConfig.expTime;
+
+            jwt:IssuerConfig issuerConfig = {
+                issuer: serviceAccount.client_email,
+                audience: serviceAccount.token_uri,
+                expTime: jwtConfig.expTime,
+                signatureConfig: {
+                    algorithm: jwt:RS256,
+                    config: {
+                        keyFile: self.PRIVATE_KEY_PATH
+                    }
+                },
+                customClaims: {
+                    iss: serviceAccount.client_email,
+                    scope: jwtConfig.scope,
+                    aud: serviceAccount.token_uri,
+                    iat: timeNow,
+                    exp: expTime
+                }
+            };
+
+            string jwtToken = check jwt:issue(issuerConfig);
+            self.jwt = jwtToken;
+            return jwtToken;
+        }
+    }
+
+    isolated function isJWTExpired(string jwtToken) returns boolean|error {
+        [jwt:Header, jwt:Payload] [_, payload] = check jwt:decode(jwtToken);
+        int? exp = payload.exp;
+        if exp is int {
+            int timeNow = time:utcNow()[0];
+            return exp < timeNow;
+        }
+        return error("Error in decoding JWT - missing exp claim");
+    }
+
+    public isolated function generateToken() returns string|error {
+        lock {
+            ServiceAccount? serviceAccount = self.serviceAccount.cloneReadOnly();
+            if serviceAccount is () {
+                return error("Service Account is not provided");
+            }
+
+            string currentJWT = self.jwt ?: "";
+
+            // Generate new JWT if none exists or if current one is expired
+            if currentJWT == "" || check self.isJWTExpired(currentJWT) {
+                currentJWT = check self.generateJWT(serviceAccount);
+            }
+
+            oauth2:JwtBearerGrantConfig jwtBearerGrantConfig = {
+                tokenUrl: serviceAccount.token_uri,
+                assertion: currentJWT
+            };
+
+            oauth2:ClientOAuth2Provider oauth2Provider = new (jwtBearerGrantConfig);
+            return oauth2Provider.generateToken();
+        }
+    }
+}
+
+function getServiceAccount(string path) returns ServiceAccount|error {
+    json serviceAccountFileInput = check io:fileReadJson(path);
+    return check serviceAccountFileInput.cloneWithType(ServiceAccount);
+}
+
 public function main() returns error? {
     io:println("=== LOCATION TRACKING WEBSOCKET SERVICE ===");
     io:println("Starting WebSocket service on port: " + wsport.toString());
     io:println("WebSocket endpoint: ws://" + host + ":" + wsport.toString() + "/ws");
+    io:println("Firebase Project ID: " + firebaseProjectId);
+    io:println("Firebase Database URL: " + firebaseDatabaseURL);
     io:println("==========================================");
 
     getCurrentDriverStatus();
+
 }
 
 service /ws on new websocket:Listener(wsport) {
@@ -59,7 +181,8 @@ public isolated service class LocationWebSocketService {
         json welcomeMessage = {
             "type": "connection_established",
             "message": "Welcome to the location tracking service",
-            "timestamp": time:utcNow()
+            "timestamp": time:utcNow(),
+            "server_version": "1.0.0"
         };
 
         check caller->writeMessage(welcomeMessage);
@@ -69,7 +192,7 @@ public isolated service class LocationWebSocketService {
         if message is string {
             log:printInfo("Received text message from client");
             json|error jsonMessage = message.fromJsonString();
-
+            io:print(jsonMessage);
             if jsonMessage is json {
                 check handleJsonMessage(caller, jsonMessage);
             } else {
@@ -87,70 +210,76 @@ public isolated service class LocationWebSocketService {
 
     remote function onClose(websocket:Caller caller, int statusCode, string reason) {
         log:printInfo(string `WebSocket connection closed. Status: ${statusCode}, Reason: ${reason}`);
-
-        lock {
-            string? driverIdToRemove = ();
-            foreach var [key, value] in connectedDrivers.entries() {
-                if value === caller {
-                    driverIdToRemove = key;
-                    break;
-                }
-            }
-
-            if driverIdToRemove is string {
-                _ = connectedDrivers.remove(driverIdToRemove);
-                _ = driverInfoMap.remove(driverIdToRemove);
-                
-                // Update Firebase - mark driver as disconnected
-                error? disconnectResult = updateDriverConnectionStatus(driverIdToRemove, false);
-                if (disconnectResult is error) {
-                    log:printError("Failed to update driver disconnect status in Firebase", disconnectResult);
-                }
-                
-                log:printInfo("Driver removed from connected drivers: " + driverIdToRemove);
-            }
-        }
+        cleanupDriverConnection(caller);
     }
 
     remote function onError(websocket:Caller caller, websocket:Error err) {
         log:printError("WebSocket error occurred", err);
+        cleanupDriverConnection(caller);
+    }
+}
+
+function cleanupDriverConnection(websocket:Caller caller) {
+    lock {
+        string? driverIdToRemove = ();
+
+        // Find driver ID by caller reference
+        foreach var [key, value] in connectedDrivers.entries() {
+            if value === caller {
+                driverIdToRemove = key;
+                break;
+            }
+        }
+
+        if driverIdToRemove is string {
+            _ = connectedDrivers.remove(driverIdToRemove);
+            _ = driverInfoMap.remove(driverIdToRemove);
+
+            // Update Firebase - mark driver as disconnected
+            var disconnectResult = updateDriverConnectionStatus(driverIdToRemove, false);
+            if disconnectResult is error {
+                log:printError("Failed to update driver disconnect status in Firebase", disconnectResult);
+            }
+
+            log:printInfo("Driver removed from connected drivers: " + driverIdToRemove);
+        }
     }
 }
 
 function handleJsonMessage(websocket:Caller caller, json message) returns websocket:Error? {
     var messageType = message.'type;
-
+    io:print(messageType);
     if messageType is string {
         match messageType {
             "driver_connected" => {
-                check handleDriverConnected(caller, message);
+                return handleDriverConnected(caller, message);
             }
             "location_update" => {
-                check handleLocationUpdate(caller, message);
+                return handleLocationUpdate(caller, message);
             }
             "heartbeat" => {
-                check handleHeartbeat(caller, message);
+                return handleHeartbeat(caller, message);
             }
             "waypoint_approaching" => {
-                check handleWaypointApproaching(caller, message);
+                return handleWaypointApproaching(caller, message);
             }
             "pickup_arrival" => {
-                check handlePickupArrival(caller, message);
+                return handlePickupArrival(caller, message);
             }
             "passenger_picked_up" => {
-                check handlePassengerPickedUp(caller, message);
+                return handlePassengerPickedUp(caller, message);
             }
             "driver_disconnected" => {
-                check handleDriverDisconnected(caller, message);
+                return handleDriverDisconnected(caller, message);
             }
             _ => {
                 log:printWarn("Unknown message type received: " + messageType);
-                check sendErrorResponse(caller, "Unknown message type");
+                return sendErrorResponse(caller, "Unknown message type: " + messageType);
             }
         }
     } else {
         log:printError("Invalid message format - missing type field");
-        check sendErrorResponse(caller, "Invalid message format");
+        return sendErrorResponse(caller, "Invalid message format - missing type field");
     }
 }
 
@@ -161,7 +290,13 @@ function handleDriverConnected(websocket:Caller caller, json message) returns we
         string driverId = parseResult.driver_id;
         string rideId = parseResult.ride_id;
 
+        // Check if driver is already connected
         lock {
+            if connectedDrivers.hasKey(driverId) {
+                log:printWarn("Driver already connected: " + driverId);
+                return sendErrorResponse(caller, "Driver already connected");
+            }
+
             connectedDrivers[driverId] = caller;
             driverInfoMap[driverId] = {
                 driverId: driverId,
@@ -169,7 +304,8 @@ function handleDriverConnected(websocket:Caller caller, json message) returns we
                 connectionTime: parseResult.timestamp,
                 lastLatitude: 0,
                 lastLocationUpdate: "",
-                lastLongitude: 0
+                lastLongitude: 0,
+                lastSeen: 0
             };
         }
 
@@ -179,23 +315,16 @@ function handleDriverConnected(websocket:Caller caller, json message) returns we
         io:println("Connection Time: " + parseResult.timestamp);
         io:println("Total Connected Drivers: " + connectedDrivers.length().toString());
         io:println("========================");
-        
-        // Store driver connection in Firebase
-        json driverConnectionData = {
+
+        // Store driver connection in Firebase asynchronously
+        var _ = start storeDriverConnectionAsync(driverId, {
             "driver_id": driverId,
             "ride_id": rideId,
             "connection_time": parseResult.timestamp,
             "status": "connected",
             "last_updated": time:utcNow()
-        };
-        
-        error? putResult = storeDriverConnection(driverId, driverConnectionData);
-        if (putResult is error) {
-            log:printError("Failed to store driver connection in Firebase", putResult);
-        } else {
-            log:printInfo("Driver connection stored in Firebase successfully");
-        }
-        
+        });
+
         json response = {
             "type": "driver_connected_ack",
             "driver_id": driverId,
@@ -203,10 +332,10 @@ function handleDriverConnected(websocket:Caller caller, json message) returns we
             "timestamp": time:utcNow()
         };
 
-        check caller->writeMessage(response);
+        return caller->writeMessage(response);
     } else {
         log:printError("Invalid driver connected message format", parseResult);
-        check sendErrorResponse(caller, "Invalid driver connected message format");
+        return sendErrorResponse(caller, "Invalid driver connected message format");
     }
 }
 
@@ -226,6 +355,9 @@ function handleLocationUpdate(websocket:Caller caller, json message) returns web
                 driverInfo.lastLongitude = longitude;
                 driverInfo.lastLocationUpdate = parseResult.timestamp;
                 driverInfoMap[driverId] = driverInfo;
+            } else {
+                log:printWarn("Location update for unknown driver: " + driverId);
+                return sendErrorResponse(caller, "Driver not registered");
             }
         }
 
@@ -235,25 +367,21 @@ function handleLocationUpdate(websocket:Caller caller, json message) returns web
         io:println("Latitude: " + latitude.toString());
         io:println("Longitude: " + longitude.toString());
 
-        // Store location update in Firebase
+        // Store location update in Firebase asynchronously
         json locationData = {
             "driver_id": driverId,
             "ride_id": rideId,
             "latitude": latitude,
             "longitude": longitude,
             "timestamp": parseResult.timestamp,
-            "speed": parseResult.speed is decimal ? parseResult.speed : null,
-            "heading": parseResult.heading is decimal ? parseResult.heading : null,
-            "accuracy": parseResult.accuracy is decimal ? parseResult.accuracy : null
+            "speed": parseResult.speed is decimal ? parseResult.speed : (),
+            "heading": parseResult.heading is decimal ? parseResult.heading : (),
+            "accuracy": parseResult.accuracy is decimal ? parseResult.accuracy : ()
         };
 
-        error? locationResult = storeLocationUpdate(driverId, locationData);
-        if (locationResult is error) {
-            log:printError("Failed to store location update in Firebase", locationResult);
-        } else {
-            log:printInfo("Location update stored in Firebase successfully");
-        }
+        var _ = start storeLocationUpdateAsync(driverId, locationData);
 
+        // Log optional fields
         if parseResult.speed is decimal {
             io:println("Speed: " + parseResult.speed.toString() + " m/s");
         }
@@ -274,10 +402,10 @@ function handleLocationUpdate(websocket:Caller caller, json message) returns web
             "timestamp": time:utcNow()
         };
 
-        check caller->writeMessage(response);
+        return caller->writeMessage(response);
     } else {
         log:printError("Invalid location update message format", parseResult);
-        check sendErrorResponse(caller, "Invalid location update message format");
+        return sendErrorResponse(caller, "Invalid location update message format");
     }
 }
 
@@ -287,22 +415,24 @@ function handleHeartbeat(websocket:Caller caller, json message) returns websocke
     if parseResult is common:HeartbeatMessage {
         string driverId = parseResult.driver_id;
 
+        // Verify driver is connected
+        lock {
+            if !connectedDrivers.hasKey(driverId) {
+                return sendErrorResponse(caller, "Driver not registered");
+            }
+        }
+
         io:println("=== HEARTBEAT ===");
         io:println("Driver ID: " + driverId);
         io:println("Timestamp: " + parseResult.timestamp);
         io:println("=================");
 
-        // Update heartbeat in Firebase
-        json heartbeatData = {
+        // Update heartbeat in Firebase asynchronously
+        var _ = start updateDriverHeartbeatAsync(driverId, {
             "driver_id": driverId,
             "last_heartbeat": parseResult.timestamp,
             "status": "active"
-        };
-
-        error? heartbeatResult = updateDriverHeartbeat(driverId, heartbeatData);
-        if (heartbeatResult is error) {
-            log:printError("Failed to update heartbeat in Firebase", heartbeatResult);
-        }
+        });
 
         json response = {
             "type": "heartbeat_ack",
@@ -310,10 +440,10 @@ function handleHeartbeat(websocket:Caller caller, json message) returns websocke
             "server_timestamp": time:utcNow()
         };
 
-        check caller->writeMessage(response);
+        return caller->writeMessage(response);
     } else {
         log:printError("Invalid heartbeat message format", parseResult);
-        check sendErrorResponse(caller, "Invalid heartbeat message format");
+        return sendErrorResponse(caller, "Invalid heartbeat message format");
     }
 }
 
@@ -333,21 +463,16 @@ function handleWaypointApproaching(websocket:Caller caller, json message) return
         io:println("Timestamp: " + parseResult.timestamp);
         io:println("============================");
 
-        // Store waypoint event in Firebase
-        json waypointData = {
-            "driver_id": driverId,
-            "ride_id": rideId,
-            "event_type": "waypoint_approaching",
-            "waypoint_latitude": parseResult.waypoint_latitude,
-            "waypoint_longitude": parseResult.waypoint_longitude,
-            "distance_to_waypoint": parseResult.distance_to_waypoint,
-            "timestamp": parseResult.timestamp
-        };
-
-        error? waypointResult = storeWaypointEvent(driverId, waypointData);
-        if (waypointResult is error) {
-            log:printError("Failed to store waypoint event in Firebase", waypointResult);
-        }
+        // Store waypoint event in Firebase asynchronously
+        var _ = start storeWaypointEventAsync(driverId, {
+                                                            "driver_id": driverId,
+                                                            "ride_id": rideId,
+                                                            "event_type": "waypoint_approaching",
+                                                            "waypoint_latitude": parseResult.waypoint_latitude,
+                                                            "waypoint_longitude": parseResult.waypoint_longitude,
+                                                            "distance_to_waypoint": parseResult.distance_to_waypoint,
+                                                            "timestamp": parseResult.timestamp
+                                                        });
 
         json response = {
             "type": "waypoint_approaching_ack",
@@ -356,10 +481,10 @@ function handleWaypointApproaching(websocket:Caller caller, json message) return
             "timestamp": time:utcNow()
         };
 
-        check caller->writeMessage(response);
+        return caller->writeMessage(response);
     } else {
         log:printError("Invalid waypoint approaching message format", parseResult);
-        check sendErrorResponse(caller, "Invalid waypoint approaching message format");
+        return sendErrorResponse(caller, "Invalid waypoint approaching message format");
     }
 }
 
@@ -378,19 +503,14 @@ function handlePickupArrival(websocket:Caller caller, json message) returns webs
         io:println("Timestamp: " + parseResult.timestamp);
         io:println("======================");
 
-        // Store pickup arrival event in Firebase
-        json pickupData = {
-            "driver_id": driverId,
-            "ride_id": rideId,
-            "event_type": "pickup_arrival",
-            "passenger_name": passengerName,
-            "timestamp": parseResult.timestamp
-        };
-
-        error? pickupResult = storeRideEvent(driverId, rideId, pickupData);
-        if (pickupResult is error) {
-            log:printError("Failed to store pickup arrival in Firebase", pickupResult);
-        }
+        // Store pickup arrival event in Firebase asynchronously
+        var _ = start storeRideEventAsync(driverId, rideId, {
+                                                                "driver_id": driverId,
+                                                                "ride_id": rideId,
+                                                                "event_type": "pickup_arrival",
+                                                                "passenger_name": passengerName,
+                                                                "timestamp": parseResult.timestamp
+                                                            });
 
         json response = {
             "type": "pickup_arrival_ack",
@@ -399,10 +519,10 @@ function handlePickupArrival(websocket:Caller caller, json message) returns webs
             "timestamp": time:utcNow()
         };
 
-        check caller->writeMessage(response);
+        return caller->writeMessage(response);
     } else {
         log:printError("Invalid pickup arrival message format", parseResult);
-        check sendErrorResponse(caller, "Invalid pickup arrival message format");
+        return sendErrorResponse(caller, "Invalid pickup arrival message format");
     }
 }
 
@@ -421,19 +541,14 @@ function handlePassengerPickedUp(websocket:Caller caller, json message) returns 
         io:println("Timestamp: " + parseResult.timestamp);
         io:println("===========================");
 
-        // Store passenger pickup event in Firebase
-        json pickupData = {
-            "driver_id": driverId,
-            "ride_id": rideId,
-            "event_type": "passenger_picked_up",
-            "passenger_name": passengerName,
-            "timestamp": parseResult.timestamp
-        };
-
-        error? pickupResult = storeRideEvent(driverId, rideId, pickupData);
-        if (pickupResult is error) {
-            log:printError("Failed to store passenger pickup in Firebase", pickupResult);
-        }
+        // Store passenger pickup event in Firebase asynchronously
+        var _ = start storeRideEventAsync(driverId, rideId, {
+                                                                "driver_id": driverId,
+                                                                "ride_id": rideId,
+                                                                "event_type": "passenger_picked_up",
+                                                                "passenger_name": passengerName,
+                                                                "timestamp": parseResult.timestamp
+                                                            });
 
         json response = {
             "type": "passenger_picked_up_ack",
@@ -442,10 +557,10 @@ function handlePassengerPickedUp(websocket:Caller caller, json message) returns 
             "timestamp": time:utcNow()
         };
 
-        check caller->writeMessage(response);
+        return caller->writeMessage(response);
     } else {
         log:printError("Invalid passenger picked up message format", parseResult);
-        check sendErrorResponse(caller, "Invalid passenger picked up message format");
+        return sendErrorResponse(caller, "Invalid passenger picked up message format");
     }
 }
 
@@ -467,15 +582,13 @@ function handleDriverDisconnected(websocket:Caller caller, json message) returns
             _ = driverInfoMap.remove(driverId);
         }
 
-        // Update Firebase - mark driver as disconnected
-        error? disconnectResult = updateDriverConnectionStatus(driverId, false);
-        if (disconnectResult is error) {
-            log:printError("Failed to update driver disconnect status in Firebase", disconnectResult);
-        }
+        // Update Firebase - mark driver as disconnected asynchronously
+        var _ = start updateDriverConnectionStatusAsync(driverId, false);
 
         io:println("Remaining Connected Drivers: " + connectedDrivers.length().toString());
     } else {
         log:printError("Invalid driver disconnected message format", parseResult);
+        return sendErrorResponse(caller, "Invalid driver disconnected message format");
     }
 }
 
@@ -486,7 +599,7 @@ function sendErrorResponse(websocket:Caller caller, string errorMessage) returns
         "timestamp": time:utcNow()
     };
 
-    check caller->writeMessage(errorResponse);
+    return caller->writeMessage(errorResponse);
 }
 
 public function getCurrentDriverStatus() {
@@ -502,14 +615,6 @@ public function getCurrentDriverStatus() {
                 io:println("Ride ID: " + driverInfo.rideId);
                 io:println("Connection Time: " + driverInfo.connectionTime);
 
-                if driverInfo.lastLatitude is decimal && driverInfo.lastLongitude is decimal {
-                    io:println("Last Location: " + driverInfo.lastLatitude.toString() + ", " + driverInfo.lastLongitude.toString());
-                }
-
-                if driverInfo.lastLocationUpdate is string {
-                    io:println(driverInfo.lastLocationUpdate);
-                }
-
                 io:println("---");
             }
         }
@@ -517,10 +622,10 @@ public function getCurrentDriverStatus() {
     io:println("=============================");
 }
 
-function broadcastToAllDrivers(json message) returns websocket:Error? {
+function broadcastToAllDrivers(json message) {
     lock {
         foreach var [driverId, caller] in connectedDrivers.entries() {
-            websocket:Error? result = caller->writeMessage(message);
+            var result = caller->writeMessage(message);
             if result is websocket:Error {
                 log:printError("Error broadcasting message to driver: " + driverId, result);
             }
@@ -528,34 +633,111 @@ function broadcastToAllDrivers(json message) returns websocket:Error? {
     }
 }
 
-// Firebase helper functions
+// Async Firebase operations
+function storeDriverConnectionAsync(string driverId, json data) {
+    var result = storeDriverConnection(driverId, data);
+    if result is error {
+        log:printError("Failed to store driver connection in Firebase", result);
+    } else {
+        log:printInfo("Driver connection stored in Firebase successfully");
+    }
+}
+
+function storeLocationUpdateAsync(string driverId, json data) {
+    var result = storeLocationUpdate(driverId, data);
+    if result is error {
+        log:printError("Failed to store location update in Firebase", result);
+    } else {
+        log:printInfo("Location update stored in Firebase successfully");
+    }
+}
+
+function updateDriverHeartbeatAsync(string driverId, json data) {
+    var result = updateDriverHeartbeat(driverId, data);
+    if result is error {
+        log:printError("Failed to update heartbeat in Firebase", result);
+    }
+}
+
+function storeWaypointEventAsync(string driverId, json data) {
+    var result = storeWaypointEvent(driverId, data);
+    if result is error {
+        log:printError("Failed to store waypoint event in Firebase", result);
+    }
+}
+
+function storeRideEventAsync(string driverId, string rideId, json data) {
+    var result = storeRideEvent(driverId, rideId, data);
+    if result is error {
+        log:printError("Failed to store ride event in Firebase", result);
+    }
+}
+
+function updateDriverConnectionStatusAsync(string driverId, boolean isConnected) {
+    var result = updateDriverConnectionStatus(driverId, isConnected);
+    if result is error {
+        log:printError("Failed to update driver connection status in Firebase", result);
+    }
+}
+
+// Firebase REST API helper functions
+function getAccessToken() returns string|error {
+    return authClient.generateToken();
+}
+
 function storeDriverConnection(string driverId, json data) returns error? {
+    string accessToken = check getAccessToken();
+    string path = "/driver_connections/" + driverId + ".json";
 
+    http:Response response = check firebaseClient->put(path, data, {
+        "Authorization": "Bearer " + accessToken
+    });
 
+    if response.statusCode != 200 {
+        return error("Failed to store driver connection: " + response.statusCode.toString());
+    }
 }
 
 function storeLocationUpdate(string driverId, json data) returns error? {
+    string accessToken = check getAccessToken();
 
-    
-    // Store in both current location and location history
-    string currentPath = "driver_locations/" + driverId + "/current";
-    firebase_realtime_database:FirebaseDatabaseClient firebaseClient = check new (firebaseConfigJson, "service-account.json");
-    error? putError = firebaseClient.putData(currentPath, data);
-    if (putError != null) {
-        log:printError("Failed to put data:", putError);
+    // Store in current location
+    string currentPath = "/driver_locations/" + driverId + "/current.json";
+    http:Response currentResponse = check firebaseClient->put(currentPath, data, {
+        "Authorization": "Bearer " + accessToken
+    });
+
+    if currentResponse.statusCode != 200 {
+        return error("Failed to store current location: " + currentResponse.statusCode.toString());
+    }
+
+    // Store in location history with proper timestamp
+    string timestamp = time:utcNow().toString();
+    string historyPath = "/driver_locations/" + driverId + "/history/" + timestamp + ".json";
+    http:Response historyResponse = check firebaseClient->put(historyPath, data, {
+        "Authorization": "Bearer " + accessToken
+    });
+
+    if historyResponse.statusCode != 200 {
+        return error("Failed to store location history: " + historyResponse.statusCode.toString());
     }
 }
 
 function updateDriverHeartbeat(string driverId, json data) returns error? {
-    string path = "driver_heartbeats/" + driverId;
-    firebase_realtime_database:FirebaseDatabaseClient firebaseClient = check new (firebaseConfigJson, "service-account.json");
-    error? putError = firebaseClient.putData(path, data);
-    if (putError != null) {
-        log:printError("Failed to put data:", putError);
+    string accessToken = check getAccessToken();
+    string path = "/driver_heartbeats/" + driverId + ".json";
+
+    http:Response response = check firebaseClient->put(path, data, {
+        "Authorization": "Bearer " + accessToken
+    });
+
+    if response.statusCode != 200 {
+        return error("Failed to update heartbeat: " + response.statusCode.toString());
     }
 }
 
 function updateDriverConnectionStatus(string driverId, boolean isConnected) returns error? {
+    string accessToken = check getAccessToken();
 
     json statusData = {
         "driver_id": driverId,
@@ -563,28 +745,41 @@ function updateDriverConnectionStatus(string driverId, boolean isConnected) retu
         "last_updated": time:utcNow(),
         "status": isConnected ? "connected" : "disconnected"
     };
-    
-    string path = "driver_connections/" + driverId + "/status";
-    firebase_realtime_database:FirebaseDatabaseClient firebaseClient = check new (firebaseConfigJson, "service-account.json");
-    error? putError = firebaseClient.putData(path, statusData);
-    if (putError != null) {
-        log:printError("Failed to put data:", putError);
-    }
 
+    string path = "/driver_connections/" + driverId + "/status.json";
+    http:Response response = check firebaseClient->put(path, statusData, {
+        "Authorization": "Bearer " + accessToken
+    });
+
+    if response.statusCode != 200 {
+        return error("Failed to update connection status: " + response.statusCode.toString());
+    }
 }
 
 function storeWaypointEvent(string driverId, json data) returns error? {
+    string accessToken = check getAccessToken();
+    string timestamp = time:utcNow().toString();
+    string path = "/ride_events/" + driverId + "/waypoints/" + timestamp + ".json";
 
-    string path = "ride_events/" + driverId + "/waypoints/" + time:utcNow().toString();
-    firebase_realtime_database:FirebaseDatabaseClient firebaseClient = check new (firebaseConfigJson, "service-account.json");
-    error? putError = firebaseClient.putData(path, data);
-    if (putError != null) {
-        log:printError("Failed to put data:", putError);
+    http:Response response = check firebaseClient->put(path, data, {
+        "Authorization": "Bearer " + accessToken
+    });
+
+    if response.statusCode != 200 {
+        return error("Failed to store waypoint event: " + response.statusCode.toString());
     }
-
 }
 
-function storeRideEvent(string driverId, string rideId, json data)  {
+function storeRideEvent(string driverId, string rideId, json data) returns error? {
+    string accessToken = check getAccessToken();
+    string timestamp = time:utcNow().toString();
+    string path = "/ride_events/" + driverId + "/" + rideId + "/" + timestamp + ".json";
 
+    http:Response response = check firebaseClient->put(path, data, {
+        "Authorization": "Bearer " + accessToken
+    });
 
+    if response.statusCode != 200 {
+        return error("Failed to store ride event: " + response.statusCode.toString());
+    }
 }

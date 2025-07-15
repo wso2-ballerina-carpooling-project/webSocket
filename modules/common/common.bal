@@ -5,6 +5,7 @@ public type DriverInfo record {
     decimal? lastLatitude;
     decimal? lastLongitude;
     string? lastLocationUpdate;
+     int? lastSeen;
 };
 
 // Message types from Flutter app
