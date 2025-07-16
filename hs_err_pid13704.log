@@ -1,0 +1,242 @@
+#
+# There is insufficient memory for the Java Runtime Environment to continue.
+# Native memory allocation (mmap) failed to map 268435456 bytes. Error detail: G1 virtual space
+# Possible reasons:
+#   The system is out of physical RAM or swap space
+#   This process is running with CompressedOops enabled, and the Java Heap may be blocking the growth of the native heap
+# Possible solutions:
+#   Reduce memory load on the system
+#   Increase physical memory or swap space
+#   Check if swap backing store is full
+#   Decrease Java heap size (-Xmx/-Xms)
+#   Decrease number of Java threads
+#   Decrease Java thread stack sizes (-Xss)
+#   Set larger code cache with -XX:ReservedCodeCacheSize=
+#   JVM is running with Unscaled Compressed Oops mode in which the Java heap is
+#     placed in the first 4GB address space. The Java Heap base address is the
+#     maximum limit for the native heap growth. Please use -XX:HeapBaseMinAddress
+#     to set the Java Heap base and to place the Java Heap above 4GB virtual address.
+# This output file may be truncated or incomplete.
+#
+#  Out of Memory Error (os_windows.cpp:3616), pid=13704, tid=5372
+#
+# JRE version:  (21.0.5+11) (build )
+# Java VM: OpenJDK 64-Bit Server VM (21.0.5+11-LTS, mixed mode, sharing, tiered, compressed oops, compressed class ptrs, g1 gc, windows-amd64)
+# No core dump will be written. Minidumps are not enabled by default on client versions of Windows
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -Xbootclasspath/a: -Xms256m -Xmx1024m -XX:+HeapDumpOnOutOfMemoryError -Dcom.sun.management.jmxremote -Dballerina.home=C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\.. -Dballerina.target=jvm -Djava.command=C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\..\..\dependencies\jdk-21.0.5+11-jre\bin\java -Djava.opts= -Denable.nonblocking=false -Dfile.encoding=UTF8 -Dballerina.version=2201.12.3 io.ballerina.cli.launcher.Main run
+
+Host: 11th Gen Intel(R) Core(TM) i5-1155G7 @ 2.50GHz, 8 cores, 7G,  Windows 11 , 64 bit Build 26100 (10.0.26100.4484)
+Time: Thu Jul 17 03:41:56 2025 Sri Lanka Standard Time elapsed time: 2.095810 seconds (0d 0h 0m 2s)
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x000001d4abefb400):  JavaThread "Unknown thread" [_thread_in_vm, id=5372, stack(0x0000007001d00000,0x0000007001e00000) (1024K)]
+
+Stack: [0x0000007001d00000,0x0000007001e00000]
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x6cd4e9]
+V  [jvm.dll+0x8a7941]
+V  [jvm.dll+0x8a9e6e]
+V  [jvm.dll+0x8aa543]
+V  [jvm.dll+0x27f6d6]
+V  [jvm.dll+0x6c9c25]
+V  [jvm.dll+0x6be84a]
+V  [jvm.dll+0x355c6a]
+V  [jvm.dll+0x35d836]
+V  [jvm.dll+0x3af40e]
+V  [jvm.dll+0x3af6b8]
+V  [jvm.dll+0x329dfc]
+V  [jvm.dll+0x32a95b]
+V  [jvm.dll+0x870ba9]
+V  [jvm.dll+0x3bc1e1]
+V  [jvm.dll+0x859cd3]
+V  [jvm.dll+0x4504ee]
+V  [jvm.dll+0x452131]
+C  [jli.dll+0x5278]
+C  [ucrtbase.dll+0x37b0]
+C  [KERNEL32.DLL+0x2e8d7]
+C  [ntdll.dll+0x3c34c]
+
+
+---------------  P R O C E S S  ---------------
+
+Threads class SMR info:
+_java_thread_list=0x00007ff83c9890c8, length=0, elements={
+}
+
+Java Threads: ( => current thread )
+Total: 0
+
+Other Threads:
+  0x000001d4abf30e50 WorkerThread "GC Thread#0"                     [id=2976, stack(0x0000007001e00000,0x0000007001f00000) (1024K)]
+  0x000001d4abf3b360 ConcurrentGCThread "G1 Main Marker"            [id=22940, stack(0x0000007001f00000,0x0000007002000000) (1024K)]
+  0x000001d4abf3bd70 WorkerThread "G1 Conc#0"                       [id=13352, stack(0x0000007002000000,0x0000007002100000) (1024K)]
+
+[error occurred during error reporting (printing all threads), id 0xc0000005, EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ff83c08c727]
+VM state: not at safepoint (not fully initialized)
+
+VM Mutex/Monitor currently owned by a thread:  ([mutex/lock_event])
+[0x00007ff83c9fd480] Heap_lock - owner thread: 0x000001d4abefb400
+
+Heap address: 0x00000000c0000000, size: 1024 MB, Compressed Oops mode: 32-bit
+
+CDS archive(s) mapped at: [0x0000000000000000-0x0000000000000000-0x0000000000000000), size 0, SharedBaseAddress: 0x0000000800000000, ArchiveRelocationMode: 1.
+Narrow klass base: 0x0000000000000000, Narrow klass shift: 0, Narrow klass range: 0x0
+
+GC Precious Log:
+ CardTable entry size: 512
+ Card Set container configuration: InlinePtr #cards 5 size 8 Array Of Cards #cards 12 size 40 Howl #buckets 4 coarsen threshold 1843 Howl Bitmap #cards 512 size 80 coarsen threshold 460 Card regions per heap region 1 cards per card region 2048
+
+Heap:
+ garbage-first heap   total 0K, used 0K [0x00000000c0000000, 0x0000000100000000)
+  region size 1024K, 0 young (0K), 0 survivors (0K)
+
+[error occurred during error reporting (printing heap information), id 0xc0000005, EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x00007ff83c476f49]
+GC Heap History (0 events):
+No events
+
+Dll operation events (1 events):
+Event: 0.038 Loaded shared library C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\java.dll
+
+Deoptimization events (0 events):
+No events
+
+Classes loaded (0 events):
+No events
+
+Classes unloaded (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (0 events):
+No events
+
+ZGC Phase Switch (0 events):
+No events
+
+VM Operations (0 events):
+No events
+
+Memory protections (0 events):
+No events
+
+Nmethod flushes (0 events):
+No events
+
+Events (0 events):
+No events
+
+
+Dynamic libraries:
+0x00007ff7ff790000 - 0x00007ff7ff79e000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\java.exe
+0x00007ff8dacc0000 - 0x00007ff8daf28000 	C:\WINDOWS\SYSTEM32\ntdll.dll
+0x00007ff8da3a0000 - 0x00007ff8da469000 	C:\WINDOWS\System32\KERNEL32.DLL
+0x00007ff8d8000000 - 0x00007ff8d83ed000 	C:\WINDOWS\System32\KERNELBASE.dll
+0x00007ff8d8910000 - 0x00007ff8d8a5b000 	C:\WINDOWS\System32\ucrtbase.dll
+0x00007ff89e8e0000 - 0x00007ff89e8fe000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\VCRUNTIME140.dll
+0x00007ff8a1370000 - 0x00007ff8a1388000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\jli.dll
+0x00007ff8daab0000 - 0x00007ff8dac7c000 	C:\WINDOWS\System32\USER32.dll
+0x00007ff8a3040000 - 0x00007ff8a32da000 	C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.4484_none_3e0e6d4ce32ef3b3\COMCTL32.dll
+0x00007ff8d83f0000 - 0x00007ff8d8417000 	C:\WINDOWS\System32\win32u.dll
+0x00007ff8d9f50000 - 0x00007ff8d9f7b000 	C:\WINDOWS\System32\GDI32.dll
+0x00007ff8d9770000 - 0x00007ff8d9819000 	C:\WINDOWS\System32\msvcrt.dll
+0x00007ff8d7e10000 - 0x00007ff8d7f47000 	C:\WINDOWS\System32\gdi32full.dll
+0x00007ff8d7f50000 - 0x00007ff8d7ff3000 	C:\WINDOWS\System32\msvcp_win.dll
+0x00007ff8d8a60000 - 0x00007ff8d8a8f000 	C:\WINDOWS\System32\IMM32.DLL
+0x00007ff89e830000 - 0x00007ff89e83c000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\vcruntime140_1.dll
+0x00007ff86a4f0000 - 0x00007ff86a57d000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\msvcp140.dll
+0x00007ff83bd50000 - 0x00007ff83cadf000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\server\jvm.dll
+0x00007ff8da5d0000 - 0x00007ff8da684000 	C:\WINDOWS\System32\ADVAPI32.dll
+0x00007ff8d9d50000 - 0x00007ff8d9df6000 	C:\WINDOWS\System32\sechost.dll
+0x00007ff8d9e00000 - 0x00007ff8d9f18000 	C:\WINDOWS\System32\RPCRT4.dll
+0x00007ff8d9b20000 - 0x00007ff8d9b94000 	C:\WINDOWS\System32\WS2_32.dll
+0x00007ff8d6d60000 - 0x00007ff8d6dbe000 	C:\WINDOWS\SYSTEM32\POWRPROF.dll
+0x00007ff8c4360000 - 0x00007ff8c4395000 	C:\WINDOWS\SYSTEM32\WINMM.dll
+0x00007ff8ce100000 - 0x00007ff8ce10b000 	C:\WINDOWS\SYSTEM32\VERSION.dll
+0x00007ff8d6c30000 - 0x00007ff8d6c44000 	C:\WINDOWS\SYSTEM32\UMPDC.dll
+0x00007ff8d6c10000 - 0x00007ff8d6c2b000 	C:\WINDOWS\SYSTEM32\kernel.appcore.dll
+0x00007ff89e820000 - 0x00007ff89e82a000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\jimage.dll
+0x00007ff8d56e0000 - 0x00007ff8d5921000 	C:\WINDOWS\SYSTEM32\DBGHELP.DLL
+0x00007ff8da720000 - 0x00007ff8daaa6000 	C:\WINDOWS\System32\combase.dll
+0x00007ff8d9a30000 - 0x00007ff8d9b10000 	C:\WINDOWS\System32\OLEAUT32.dll
+0x00007ff8c0db0000 - 0x00007ff8c0df3000 	C:\WINDOWS\SYSTEM32\dbgcore.DLL
+0x00007ff8d85a0000 - 0x00007ff8d8639000 	C:\WINDOWS\System32\bcryptPrimitives.dll
+0x00007ff89dd00000 - 0x00007ff89dd1f000 	C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\java.dll
+
+dbghelp: loaded successfully - version: 4.0.5 - missing functions: none
+symbol engine: initialized successfully - sym options: 0x614 - pdb path: .;C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin;C:\WINDOWS\SYSTEM32;C:\WINDOWS\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.26100.4484_none_3e0e6d4ce32ef3b3;C:\PROGRA~1\BALLER~1\dependencies\jdk-21.0.5+11-jre\bin\server
+
+VM Arguments:
+jvm_args: -Xbootclasspath/a: -Xms256m -Xmx1024m -XX:+HeapDumpOnOutOfMemoryError -Dcom.sun.management.jmxremote -Dballerina.home=C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\.. -Dballerina.target=jvm -Djava.command=C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\..\..\dependencies\jdk-21.0.5+11-jre\bin\java -Djava.opts= -Denable.nonblocking=false -Dfile.encoding=UTF8 -Dballerina.version=2201.12.3 
+java_command: io.ballerina.cli.launcher.Main run
+java_class_path (initial): .\bre\lib\bootstrap;;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\..\..\dependencies\jdk-21.0.5+11-jre\lib\tools.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\annotations-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\architecture-model-generator-core-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\architecture-model-generator-plugin-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\array-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\asm-9.7.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\asm-analysis-9.7.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\asm-commons-9.7.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\asm-tree-9.7.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\asm-util-9.7.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\asyncapi-cli-0.11.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\atomikos-util-5.0.8.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\axiom-api-1.4.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\axiom-impl-1.4.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-bindgen-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-cli-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-io-internal-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-lang-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-linter-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-metrics-extension-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-parser-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-profiler-1.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-rt-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-to-openapi-2.3.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\ballerina-tools-api-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\bool-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\central-client-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\commons-beanutils-1.9.4.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\commons-codec-1.14.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\commons-collections-3.2.2.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\commons-compress-1.26.2.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\commons-text-1.10.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\compiler-0.8.9.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\configurable-schema-generator-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\decimal-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\diagram-util-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\docerina-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\error-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\floatingpoint-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\flow-model-central-client-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\flow-model-generator-core-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\formatter-cli-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\formatter-core-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\function-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\future-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\geronimo-stax-api_1.0_spec-1.0.1.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\graphql-cli-0.13.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\graphql-code-generator-0.13.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\graphql-model-generator-core-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\graphql-schema-file-generator-0.13.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\gson-2.10.1.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\identifier-util-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\integer-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\internal-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jackson-annotations-2.15.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jackson-core-2.15.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jackson-databind-2.15.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jackson-dataformat-yaml-2.15.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jackson-datatype-jsr310-2.15.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jacocoagent.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jaeger-core-0.31.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jaeger-thrift-0.31.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\java-diff-utils-4.5.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\javax.mail-1.6.2.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\javax.transaction-api-1.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jballerina.java-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\jline-3.25.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\kotlin-stdlib-1.6.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\kotlin-stdlib-common-1.6.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\language-server-commons-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\map-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\maven-resolver-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\model-generator-commons-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\netty-buffer-4.1.118.Final.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\netty-common-4.1.118.Final.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\netty-resolver-4.1.118.Final.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\netty-transport-4.1.118.Final.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\netty-transport-native-epoll-4.1.118.Final.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\netty-transport-native-kqueue-4.1.118.Final.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\object-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\okhttp-3.14.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\okio-jvm-3.4.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\openapi-bal-task-plugin-2.3.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\openapi-build-extension-2.3.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\openapi-cli-2.3.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\openapi-core-2.3.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\openapi-validator-2.3.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.jacoco.core-0.8.12.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.jacoco.report-0.8.12.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.wso2.carbon.core-5.1.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.wso2.carbon.messaging-2.3.7.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.wso2.carbon.metrics.core-2.3.7.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.wso2.securevault-1.0.0-wso2v2.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.wso2.transport.http.netty-6.3.11.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\org.wso2.transport.local-file-system-6.0.55.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\package-semantic-analyzer-1.0.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\persist-cli-1.6.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\picocli-4.0.1.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\progressbar-0.7.4.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\protoc-cli-0.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\query-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\regexp-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\runtime-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\semver-checker-cli-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\semver-checker-core-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\sequence-model-generator-core-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\shell-cli-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\shell-core-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\snakeyaml-2.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\sqlite-jdbc-3.47.0.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\stax2-api-4.2.1.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\staxon-core-1.2.0.wso2v2.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\stream-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\string-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\syntax-api-calls-gen-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\table-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\testerina-core-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\testerina-runtime-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\toml-parser-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\transaction-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\transactions-5.0.8.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\transactions-api-5.0.8.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\transactions-jta-5.0.8.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\typedesc-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\value-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\woodstox-core-6.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\bre\lib\xml-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\architecture-model-generator-ls-extension-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\bal-shell-service-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\ballerinalang-data-mapper-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\cloud-tooling-3.3.2.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\commons-io-2.15.1.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\flow-model-generator-ls-extension-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\graphql-model-generator-ls-extension-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\guava-32.0.1-jre.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\json-to-record-converter-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\language-server-cli-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\language-server-core-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\language-server-stdio-launcher-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\openapi-ls-extension-2.3.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\org.eclipse.lsp4j-0.15.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\org.eclipse.lsp4j.jsonrpc-0.15.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\partial-parser-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\performance-analyzer-services-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\sequence-model-generator-ls-extension-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\service-model-generator-ls-extension-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\test-manager-service-ls-extension-2.5.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\trigger-service-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\lang-server\lib\xml-to-record-converter-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\debug-adapter\lib\commons-io-2.15.1.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\debug-adapter\lib\debug-adapter-cli-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\debug-adapter\lib\debug-adapter-core-2201.12.3.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\debug-adapter\lib\java-semver-0.9.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\debug-adapter\lib\org.eclipse.lsp4j.debug-0.12.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\debug-adapter\lib\org.eclipse.lsp4j.jsonrpc-0.15.0.jar;C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\lib\tools\debug-adapter\lib\org.eclipse.lsp4j.jsonrpc.debug-0.15.0.jar
+Launcher Type: SUN_STANDARD
+
+[Global flags]
+     intx CICompilerCount                          = 4                                         {product} {ergonomic}
+     uint ConcGCThreads                            = 2                                         {product} {ergonomic}
+     uint G1ConcRefinementThreads                  = 8                                         {product} {ergonomic}
+   size_t G1HeapRegionSize                         = 1048576                                   {product} {ergonomic}
+    uintx GCDrainStackTargetSize                   = 64                                        {product} {ergonomic}
+     bool HeapDumpOnOutOfMemoryError               = true                                   {manageable} {command line}
+   size_t InitialHeapSize                          = 268435456                                 {product} {command line}
+     bool ManagementServer                         = true                                      {product} {command line}
+   size_t MarkStackSize                            = 4194304                                   {product} {ergonomic}
+   size_t MaxHeapSize                              = 1073741824                                {product} {command line}
+   size_t MinHeapDeltaBytes                        = 1048576                                   {product} {ergonomic}
+   size_t MinHeapSize                              = 268435456                                 {product} {command line}
+    uintx NonNMethodCodeHeapSize                   = 5839372                                {pd product} {ergonomic}
+    uintx NonProfiledCodeHeapSize                  = 122909434                              {pd product} {ergonomic}
+    uintx ProfiledCodeHeapSize                     = 122909434                              {pd product} {ergonomic}
+    uintx ReservedCodeCacheSize                    = 251658240                              {pd product} {ergonomic}
+     bool SegmentedCodeCache                       = true                                      {product} {ergonomic}
+   size_t SoftMaxHeapSize                          = 1073741824                             {manageable} {ergonomic}
+     bool UseCompressedOops                        = true                           {product lp64_product} {ergonomic}
+     bool UseG1GC                                  = true                                      {product} {ergonomic}
+     bool UseLargePagesIndividualAllocation        = false                                  {pd product} {ergonomic}
+
+Logging:
+Log output configuration:
+ #0: stdout all=warning uptime,level,tags foldmultilines=false
+ #1: stderr all=off uptime,level,tags foldmultilines=false
+
+Environment Variables:
+JAVA_HOME=C:\PROGRA~1\BALLER~1\DISTRI~1\BALLER~1.3\bin\..\..\..\dependencies\jdk-21.0.5+11-jre
+PATH=C:\Program Files\Common Files\Oracle\Java\javapath;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\cmd;C:\Program Files\nodejs\;C:\Users\rdfco\AppData\Local\Pub\Cache\bin;C:\Program Files\Ballerina\\bin;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Java\jdk-23\bin;C:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Program Files\Cloudflare\Cloudflare WARP\;C:\Program Files (x86)\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files\Azure Data Studio\bin;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files (x86)\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\DTS\Binn\;C:\Users\rdfco\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\rdfco\AppData\Local\Programs\Python\Python313\;C:\Users\rdfco\AppData\Local\Programs\Python\Launcher\;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Users\rdfco\AppData\Local\Microsoft\WindowsApps;C:\Users\rdfco\AppData\Local\Programs\Microsoft VS Code\bin;C:\flutter\src\flutter\bin;C:\Users\rdfco\AppData\Roaming\npm;C:\Users\rdfco\AppData\Local\Pub\Cache\bin;C:\msys64\ucrt64\bin;;C:\Program Files\JetBrains\PyCharm 2025.1.1.1\bin;;C:\Users\rdfco\AppData\Local\Programs\cursor\resources\app\bin;C:\Program Files\Azure Data Studio\bin;c:\Users\rdfco\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand
+USERNAME=Nalaka
+LANG=en_US.UTF-8
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=Intel64 Family 6 Model 140 Stepping 2, GenuineIntel
+TMP=C:\Users\rdfco\AppData\Local\Temp
+TEMP=C:\Users\rdfco\AppData\Local\Temp
+
+
+
+
+Periodic native trim disabled
+
+---------------  S Y S T E M  ---------------
+
+OS:
+ Windows 11 , 64 bit Build 26100 (10.0.26100.4484)
+OS uptime: 4 days 3:27 hours
+Hyper-V role detected
+
+CPU: total 8 (initial active 8) (4 cores per cpu, 2 threads per core) family 6 model 140 stepping 2 microcode 0x16, cx8, cmov, fxsr, ht, mmx, 3dnowpref, sse, sse2, sse3, ssse3, sse4.1, sse4.2, popcnt, lzcnt, tsc, tscinvbit, avx, avx2, aes, erms, clmul, bmi1, bmi2, adx, avx512f, avx512dq, avx512cd, avx512bw, avx512vl, sha, fma, vzeroupper, avx512_vpopcntdq, avx512_vpclmulqdq, avx512_vaes, avx512_vnni, clflush, clflushopt, clwb, avx512_vbmi2, avx512_vbmi, hv, rdtscp, rdpid, fsrm, gfni, avx512_bitalg, f16c, cet_ibt, cet_ss, avx512_ifma
+Processor Information for all 8 processors :
+  Max Mhz: 2496, Current Mhz: 2496, Mhz Limit: 2496
+
+Memory: 4k page, system-wide physical 7893M (443M free)
+TotalPageFile size 32469M (AvailPageFile size 97M)
+current process WorkingSet (physical memory assigned to process): 12M, peak: 12M
+current process commit charge ("private bytes"): 60M, peak: 316M
+
+vm_info: OpenJDK 64-Bit Server VM (21.0.5+11-LTS) for windows-amd64 JRE (21.0.5+11-LTS), built on 2024-10-15T00:00:00Z by "admin" with MS VC++ 17.7 (VS2022)
+
+END.
