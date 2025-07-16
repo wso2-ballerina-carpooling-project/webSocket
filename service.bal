@@ -14,6 +14,8 @@ configurable string host = ?;
 // Thread-safe maps for driver management
 map<websocket:Caller> connectedDrivers = {};
 map<common:DriverInfo> driverInfoMap = {};
+map<websocket:Caller> connectedPassengers = {};
+map<common:PassengerInfo> passengerInfoMap = {};
 
 // Firebase configuration
 configurable string firebaseProjectId = ?;
@@ -254,8 +256,8 @@ function handleJsonMessage(websocket:Caller caller, json message) returns websoc
             "driver_connected" => {
                 return handleDriverConnected(caller, message);
             }
-            "location_update" => {
-                return handleLocationUpdate(caller, message);
+           "location_update" => {
+                return handleLocationUpdateWithPassengerNotification(caller, message);
             }
             "heartbeat" => {
                 return handleHeartbeat(caller, message);
@@ -268,6 +270,9 @@ function handleJsonMessage(websocket:Caller caller, json message) returns websoc
             }
             "passenger_picked_up" => {
                 return handlePassengerPickedUp(caller, message);
+            }
+            "passenger_connected" => {
+                return handlePassengerConnected(caller,message);
             }
             "driver_disconnected" => {
                 return handleDriverDisconnected(caller, message);
@@ -781,5 +786,276 @@ function storeRideEvent(string driverId, string rideId, json data) returns error
 
     if response.statusCode != 200 {
         return error("Failed to store ride event: " + response.statusCode.toString());
+    }
+}
+
+
+function handlePassengerConnected(websocket:Caller caller, json message) returns websocket:Error? {
+    common:PassengerConnectedMessage|error parseResult = message.cloneWithType();
+
+    if parseResult is common:PassengerConnectedMessage {
+        string passengerId = parseResult.passenger_id;
+        string driverId = parseResult.driver_id;
+
+        // Check if passenger is already connected
+        lock {
+            if connectedPassengers.hasKey(passengerId) {
+                log:printWarn("Passenger already connected: " + passengerId);
+                return sendErrorResponse(caller, "Passenger already connected");
+            }
+
+            connectedPassengers[passengerId] = caller;
+            passengerInfoMap[passengerId] = {
+                passengerId: passengerId,
+                driverId: driverId
+            };
+        }
+
+        io:println("=== PASSENGER CONNECTED ===");
+        io:println("Passenger ID: " + passengerId);
+        io:println("Driver ID: " + driverId);
+        io:println("===========================");
+
+        // Send acknowledgment first
+        json ackResponse = {
+            "type": "passenger_connected_ack",
+            "passenger_id": passengerId,
+            "driver_id": driverId,
+            "status": "success",
+            "timestamp": time:utcNow()
+        };
+
+        check caller->writeMessage(ackResponse);
+
+        // Send driver location and pickup confirmation
+        check sendDriverLocationToPassenger(caller, passengerId, driverId);
+
+        return;
+    } else {
+        log:printError("Invalid passenger connected message format", parseResult);
+        return sendErrorResponse(caller, "Invalid passenger connected message format");
+    }
+}
+
+// Function to send driver location and pickup confirmation to passenger
+function sendDriverLocationToPassenger(websocket:Caller passengerCaller, string passengerId, string driverId) returns websocket:Error? {
+    lock {
+        // Check if driver is connected and get driver info
+        if !connectedDrivers.hasKey(driverId) {
+            log:printWarn("Driver not connected: " + driverId);
+            json errorResponse = {
+                "type": "driver_not_available",
+                "message": "Driver is not currently connected",
+                "driver_id": driverId,
+                "timestamp": time:utcNow()
+            };
+            return passengerCaller->writeMessage(errorResponse);
+        }
+
+        common:DriverInfo? driverInfo = driverInfoMap[driverId];
+        if driverInfo is common:DriverInfo {
+            // Send driver location to passenger
+            json locationResponse = {
+                "type": "driver_location",
+                "driver_id": driverId,
+                "passenger_id": passengerId,
+                "latitude": driverInfo.lastLatitude,
+                "longitude": driverInfo.lastLongitude,
+                "last_updated": driverInfo.lastLocationUpdate,
+                "ride_id": driverInfo.rideId,
+                "timestamp": time:utcNow()
+            };
+
+            check passengerCaller->writeMessage(locationResponse);
+
+            // Send pickup confirmation
+            json pickupConfirmation = {
+                "type": "pickup_confirmation",
+                "driver_id": driverId,
+                "passenger_id": passengerId,
+                "ride_id": driverInfo.rideId,
+                "status": "driver_assigned",
+                "message": "Your driver has been assigned and is on the way",
+                "driver_location": {
+                    "latitude": driverInfo.lastLatitude,
+                    "longitude": driverInfo.lastLongitude,
+                    "last_updated": driverInfo.lastLocationUpdate
+                },
+                "timestamp": time:utcNow()
+            };
+
+            check passengerCaller->writeMessage(pickupConfirmation);
+
+            // Optionally notify the driver about passenger connection
+            websocket:Caller? driverCaller = connectedDrivers[driverId];
+            if driverCaller is websocket:Caller {
+                json driverNotification = {
+                    "type": "passenger_connected_notification",
+                    "passenger_id": passengerId,
+                    "driver_id": driverId,
+                    "ride_id": driverInfo.rideId,
+                    "message": "Passenger has connected to track your location",
+                    "timestamp": time:utcNow()
+                };
+
+                var notifyResult = driverCaller->writeMessage(driverNotification);
+                if notifyResult is websocket:Error {
+                    log:printError("Failed to notify driver about passenger connection", notifyResult);
+                }
+            }
+
+            log:printInfo("Driver location and pickup confirmation sent to passenger: " + passengerId);
+        } else {
+            log:printWarn("Driver info not found for driver: " + driverId);
+            json errorResponse = {
+                "type": "driver_info_not_available",
+                "message": "Driver information not available",
+                "driver_id": driverId,
+                "timestamp": time:utcNow()
+            };
+            return passengerCaller->writeMessage(errorResponse);
+        }
+    }
+}
+
+// Update your handleJsonMessage function to use the enhanced location handler
+// Replace the existing "location_update" case with:
+// "location_update" => {
+//     return handleLocationUpdateWithPassengerNotification(caller, message);
+// }
+
+// Update your onClose handler in LocationWebSocketService to handle both driver and passenger cleanup
+// remote function onClose(websocket:Caller caller, int statusCode, string reason) {
+//     log:printInfo(string `WebSocket connection closed. Status: ${statusCode}, Reason: ${reason}`);
+//     cleanupDriverConnection(caller);
+//     cleanupPassengerConnection(caller);
+// }
+
+// Update your onError handler similarly
+// remote function onError(websocket:Caller caller, websocket:Error err) {
+//     log:printError("WebSocket error occurred", err);
+//     cleanupDriverConnection(caller);
+//     cleanupPassengerConnection(caller);
+// }
+function handleLocationUpdateWithPassengerNotification(websocket:Caller caller, json message) returns websocket:Error? {
+    common:LocationUpdateMessage|error parseResult = message.cloneWithType();
+
+    if parseResult is common:LocationUpdateMessage {
+        string driverId = parseResult.driver_id;
+        string rideId = parseResult.ride_id;
+        decimal latitude = parseResult.latitude;
+        decimal longitude = parseResult.longitude;
+
+        lock {
+            if driverInfoMap.hasKey(driverId) {
+                common:DriverInfo driverInfo = driverInfoMap.get(driverId);
+                driverInfo.lastLatitude = latitude;
+                driverInfo.lastLongitude = longitude;
+                driverInfo.lastLocationUpdate = parseResult.timestamp;
+                driverInfoMap[driverId] = driverInfo;
+            } else {
+                log:printWarn("Location update for unknown driver: " + driverId);
+                return sendErrorResponse(caller, "Driver not registered");
+            }
+        }
+
+        // Send location update to connected passengers for this driver
+        check broadcastLocationToPassengers(driverId, parseResult);
+
+        // Store location update in Firebase asynchronously
+        json locationData = {
+            "driver_id": driverId,
+            "ride_id": rideId,
+            "latitude": latitude,
+            "longitude": longitude,
+            "timestamp": parseResult.timestamp,
+            "speed": parseResult.speed is decimal ? parseResult.speed : (),
+            "heading": parseResult.heading is decimal ? parseResult.heading : (),
+            "accuracy": parseResult.accuracy is decimal ? parseResult.accuracy : ()
+        };
+
+        var _ = start storeLocationUpdateAsync(driverId, locationData);
+
+        json response = {
+            "type": "location_received",
+            "driver_id": driverId,
+            "status": "success",
+            "timestamp": time:utcNow()
+        };
+
+        return caller->writeMessage(response);
+    } else {
+        log:printError("Invalid location update message format", parseResult);
+        return sendErrorResponse(caller, "Invalid location update message format");
+    }
+}
+
+// Function to broadcast location updates to passengers tracking this driver
+function broadcastLocationToPassengers(string driverId, common:LocationUpdateMessage locationUpdate) returns websocket:Error? {
+    lock {
+        foreach var [passengerId, passengerInfo] in passengerInfoMap.entries() {
+            if passengerInfo.driverId == driverId {
+                websocket:Caller? passengerCaller = connectedPassengers[passengerId];
+                if passengerCaller is websocket:Caller {
+                    json locationBroadcast = {
+                        "type": "driver_location_update",
+                        "driver_id": driverId,
+                        "passenger_id": passengerId,
+                        "latitude": locationUpdate.latitude,
+                        "longitude": locationUpdate.longitude,
+                        "speed": locationUpdate.speed,
+                        "heading": locationUpdate.heading,
+                        "accuracy": locationUpdate.accuracy,
+                        "timestamp": locationUpdate.timestamp
+                    };
+
+                    var result = passengerCaller->writeMessage(locationBroadcast);
+                    if result is websocket:Error {
+                        log:printError("Failed to send location update to passenger: " + passengerId, result);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Function to handle passenger disconnection
+function cleanupPassengerConnection(websocket:Caller caller) {
+    lock {
+        string? passengerIdToRemove = ();
+
+        // Find passenger ID by caller reference
+        foreach var [key, value] in connectedPassengers.entries() {
+            if value === caller {
+                passengerIdToRemove = key;
+                break;
+            }
+        }
+
+        if passengerIdToRemove is string {
+            _ = connectedPassengers.remove(passengerIdToRemove);
+            common:PassengerInfo? passengerInfo = passengerInfoMap.remove(passengerIdToRemove);
+
+            if passengerInfo is common:PassengerInfo {
+                // Notify driver about passenger disconnection
+                websocket:Caller? driverCaller = connectedDrivers[passengerInfo.driverId];
+                if driverCaller is websocket:Caller {
+                    json driverNotification = {
+                        "type": "passenger_disconnected_notification",
+                        "passenger_id": passengerIdToRemove,
+                        "driver_id": passengerInfo.driverId,
+                        "message": "Passenger has disconnected from tracking",
+                        "timestamp": time:utcNow()
+                    };
+
+                    var notifyResult = driverCaller->writeMessage(driverNotification);
+                    if notifyResult is websocket:Error {
+                        log:printError("Failed to notify driver about passenger disconnection", notifyResult);
+                    }
+                }
+            }
+
+            log:printInfo("Passenger removed from connected passengers: " + passengerIdToRemove);
+        }
     }
 }

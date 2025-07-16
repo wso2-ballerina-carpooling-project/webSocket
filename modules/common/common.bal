@@ -7,6 +7,10 @@ public type DriverInfo record {
     string? lastLocationUpdate;
      int? lastSeen;
 };
+public type PassengerInfo record {
+    string passengerId;
+    string driverId;
+};
 
 // Message types from Flutter app
 public type LocationUpdateMessage record {
@@ -26,6 +30,11 @@ public type DriverConnectedMessage record {
     string driver_id;
     string ride_id;
     string timestamp;
+};
+public type PassengerConnectedMessage record {
+    string 'type;
+    string passenger_id;
+    string driver_id;
 };
 
 public type DriverDisconnectedMessage record {
