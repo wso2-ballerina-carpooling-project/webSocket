@@ -992,6 +992,7 @@ function handleLocationUpdateWithPassengerNotification(websocket:Caller caller, 
 
 // Function to broadcast location updates to passengers tracking this driver
 function broadcastLocationToPassengers(string driverId, common:LocationUpdateMessage locationUpdate) returns websocket:Error? {
+    log:printInfo("Location update send to passenger");
     lock {
         foreach var [passengerId, passengerInfo] in passengerInfoMap.entries() {
             if passengerInfo.driverId == driverId {
@@ -1008,7 +1009,6 @@ function broadcastLocationToPassengers(string driverId, common:LocationUpdateMes
                         "accuracy": locationUpdate.accuracy,
                         "timestamp": locationUpdate.timestamp
                     };
-                    io:print("Location update send to passenger");
 
                     var result = passengerCaller->writeMessage(locationBroadcast);
                     if result is websocket:Error {
