@@ -72,6 +72,6 @@ public type PassengerPickedUpMessage record {
     string 'type;
     string driver_id;
     string ride_id;
-    string passenger_name;
+    string passenger_id;
     string timestamp;
 };

@@ -537,21 +537,23 @@ function handlePassengerPickedUp(websocket:Caller caller, json message) returns 
     if parseResult is common:PassengerPickedUpMessage {
         string driverId = parseResult.driver_id;
         string rideId = parseResult.ride_id;
-        string passengerName = parseResult.passenger_name;
+        string passengerId = parseResult.passenger_id;
 
         io:println("=== PASSENGER PICKED UP ===");
         io:println("Driver ID: " + driverId);
         io:println("Ride ID: " + rideId);
-        io:println("Passenger Name: " + passengerName);
+        io:println("Passenger ID: " + passengerId);
         io:println("Timestamp: " + parseResult.timestamp);
         io:println("===========================");
 
+
+        notifyPassengerPickedUp(passengerId, driverId, rideId, parseResult.timestamp);
         // Store passenger pickup event in Firebase asynchronously
         var _ = start storeRideEventAsync(driverId, rideId, {
                                                                 "driver_id": driverId,
                                                                 "ride_id": rideId,
                                                                 "event_type": "passenger_picked_up",
-                                                                "passenger_name": passengerName,
+                                                                "passenger_name": passengerId,
                                                                 "timestamp": parseResult.timestamp
                                                             });
 
@@ -1058,5 +1060,36 @@ function cleanupPassengerConnection(websocket:Caller caller) {
 
             log:printInfo("Passenger removed from connected passengers: " + passengerIdToRemove);
         }
+    }
+}
+
+function notifyPassengerPickedUp(string passengerId, string driverId, string rideId, string timestamp) {
+    // Check if passenger is connected via WebSocket
+    websocket:Caller? passengerConnection = connectedPassengers[passengerId];
+    
+    if passengerConnection is websocket:Caller {
+        // Get passenger info if available
+        common:PassengerInfo? passengerInfo = passengerInfoMap[passengerId];
+        
+        json passengerMessage = {
+            "type": "driver_confirmed_pickup",
+            "message": "Your driver has confirmed that you have been picked up",
+            "driver_id": driverId,
+            "ride_id": rideId,
+            "passenger_id": passengerId,
+            "status": "picked_up",
+            "timestamp": timestamp
+        };
+        
+        // Send message to passenger
+        var result = passengerConnection->writeMessage(passengerMessage);
+        if result is websocket:Error {
+            log:printError("Failed to send pickup confirmation to passenger: " + passengerId, result);
+        } else {
+            io:println("Pickup confirmation sent to passenger: " + " (" + passengerId + ")");
+        }
+    } else {
+        io:println("Passenger not connected via WebSocket: " + passengerId);
+        // Optional: Store the message for later delivery or send via other means (push notification, etc.)
     }
 }
