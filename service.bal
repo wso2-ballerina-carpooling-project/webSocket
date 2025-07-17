@@ -257,7 +257,7 @@ function handleJsonMessage(websocket:Caller caller, json message) returns websoc
                 return handleDriverConnected(caller, message);
             }
             "location_update" => {
-                return handleLocationUpdate(caller, message);
+                return handleLocationUpdateWithPassengerNotification(caller, message);
             }
             "heartbeat" => {
                 return handleHeartbeat(caller, message);
